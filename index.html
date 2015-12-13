@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Continuous Integration</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Michael Haeuslmann">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h1>Continuous Integration</h1>
+					<ul>
+						<li>Michael Haeuslmann</li>
+						<li>Michael Palm</li>
+						<li>Markus Rodler</li>
+					</ul>
+				</section>
+
+<section data-markdown><script type="text/template">
+## Ziel
+
+Ziel der Übung ist es vorhandenes Wissen über Versionskontrolle und Buildmanagement auszubauen und mit dem Thema Continuous Integration zu verbinden.
+ 
+Team: XYZ 
+ 
+</script></section><section data-markdown><script type="text/template">
+## Glückwunsch
+
+Ihr dürft jetzt ein Legacy Projekt warten. Zum Glück habt ihr einen Continuous Integration Server, der euch die Arbeit erleichtert. 
+
+</script></section><section data-markdown><script type="text/template">
+## Los geht's
+
+Der Code für euer Projekt liegt auf dem FH internen GitLab, pullen sie diesen über das Terminal von 
+
+```
+git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git
+```
+
+</script></section><section data-markdown><script type="text/template">
+## Maven
+
+Im Projekt befindet sich eine `pom.xml` (es handelt sich also um ein Maven Projekt). Führt die Tests über das Terminal aus (Maven wird auf dem Terminal als `mvn` abgekürtzt). (*)
+
+</script></section><section data-markdown><script type="text/template">
+## Work smart, work less
+
+Also wir haben Tests, das ist schonmal gut, aber nicht jeder Entwickler denkt immer daran die Tests auszuführen. Deshalb nutzen wir besser **zusätzlich** unseren Continuous Integration Server. Dieser führt Tests automatisch aus und benachrichtigt die Entwickler. 
+
+</script></section><section data-markdown><script type="text/template">
+
+## Get it done
+
+- wechselt im Terminal auf den Desktop
+- öffnet Jenkins wie jede andere Java Anwendung (es startet ein Webserver)
+```
+java -jar jenkins.war
+```
+- für euer Projekt existiert bereits eine einfache Konfiguration
+- navigiert im Browser auf 
+```
+http://localhost:8080
+``` 
+- startet einen Build
+
+</script></section><section data-markdown><script type="text/template">
+## Reicht das?
+
+Wenn wir mal ehrlich sind, dann haben wir immer noch nicht viel erreicht. Entwickler müssen immer noch "von Hand" überprüfen ob alles in Ordnung ist.
+
+Was wir eigentlich wollen ist, dass ein Commit automatisch die Überprüfung startet. Man kann dies durch sog. Polling (alle x Intervalle auf Änderungen prüfen) realisieren, aber effizienter ist, wenn der CI Server nur arbeitet, wenn es wirklich Änderungen gibt.
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks
+
+Hier kommen Git Hooks ins Spiel. Aber wie es im Leben so ist gibt es natürlich wieder verschiedene Möglichkeiten dies umzusetzen.
+
+ - Server-seitig: z.B. pre-receive, post-receive, update
+ - Client-seitig: z.B. pre-commit, post-commit, pre-checkout, **post-push**, ...
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks #2
+
+Wir werden hier die lokale Lösung verwenden, da Sie keinen Zugriff auf den Server haben. Idealerweise ist ein post-receive hook für den Server, da die Client-seitige Lösung von jedem Entwickler umgesetzt werden muss.
+
+Git Hooks sind sprachunabhängige Skripte die nur ausführbar sein müssen.
+
+Wir verwenden folgende Bash Lösung:
+
+```bash
+#!/bin/sh
+curl "http://localhost:8080/git/notifyCommit?url=git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git"
+``` 
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks #3
+
+@TODO
+
+```bash
+#!/bin/sh
+curl "http://localhost:8080/git/notifyCommit?url=git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git"
+```
+
+</script></section><section data-markdown><script type="text/template">
+## Making it work
+
+Erstellen Sie den Hook im Projektverzeichnis unter dem Pfad `.git/hooks/pre-push` (`pre-push` ist der Dateiname).
+
+In diesem Ordner sehen übrigens auch noch Beispiele für andere typische Git Hooks.
+
+</script></section><section data-markdown><script type="text/template">
+## Let's try it
+
+Nehmen Sie jetzt eine kleine Änderung vor (z.B. an der `README.md`) und commiten und pushen Sie diese.
+
+Sie sollten beim Push eine Bestätigungsnachricht vom Server bekommen (`Scheduled polling of XZY`).
+
+</script></section><section data-markdown><script type="text/template">
+## Spread the word
+
+Damit jeder über den Stand der Software informiert wird bietet benachrichtigt Jenkins die Teammitglieder. Teams benutzen dafür alles mögliche von E-Mail, Twitter, Skype, IRC, Slack, Hipchat bis hin zu Lavalampen.
+
+Für diese Übung haben wir Jenkins mit Slack integriert. Alle Teams der Übung haben verschiedene Instanzen von Jenkins, die jedoch auf den gleichen Slack Channel benachrichtigen.
+
+Ein Blick auf den Beamer sollte 3-5 Sekunden (Jenkins Ruhephase) nach eurem Push zeigen, dass der Build anläuft.
+
+</script></section><section data-markdown><script type="text/template">
+## Zwischenergebnis
+
+Unser Stand ist jetzt, dass wir während der Arbeit über den Stand des Projekts hinsichtlich der Tests benachrichtigt werden. Wenn ein Entwickler einen Build zerstört, bekommt das dann auch jeder mit (und ein zerstörter Build kann viel Zeit und Geld kosten).
+
+Damit so etwas nicht passiert schreibt man besser viele Tests und stellt sicher, dass alles läuft. Noch besser wäre natürlich ein pre-commit Hook der das überprüft, dann vergißt man es nicht.
+
+Nichtsdestotrotz haben wir jetzt ein Sicherheitsnetz (oder zumindest jemanden der schreit, falls man sich das Genick bricht).
+
+</script></section><section data-markdown><script type="text/template">
+## What can Jenkins do?
+
+Tests sind natürlich nicht unser einziges Maß der Projektqualität.
+
+Jenkins ist erweiterbar und es gibt hunderte Plugins die einfach im GUI zu installieren sind.
+
+Bevor wir uns Analysetools ansehen, installieren wir zwei Plugins um produktiver arbeiten zu können.
+
+</script></section><section data-markdown><script type="text/template">
+## Jenkins Plugins
+
+Rufen Sie wieder Jenkins auf und installieren sie folgende Plugins:
+
+#</script></section><section data-markdown><script type="text/template">
+## Green Balls
+
+Blaue Benachrichtigungen sind ein UX Disaster.
+
+#</script></section><section data-markdown><script type="text/template">
+## Chuck Norris
+
+> The Chuck Norris plugin for Hudson is _very_ motivating.
+
+> Uncle Bob Martin
+
+https://twitter.com/unclebobmartin/statuses/10741488856
+
+</script></section><section data-markdown><script type="text/template">
+## Review
+
+Mit der Unterstützung von Chuck Norris kann man wieder ordentlich arbeiten. 
+
+Wir haben bereits einige weitere Plugins vorbereitet. Diese sollen uns helfen konkretere Aussagen über die Projektqualität machen zu können.
+
+Versuchen Sie die folgenden Fragen mit Hilfe der Ergebnisse von Jenkins zu beantworten:
+
+Wie viel Code Coverage wird durch die Tests erziehlt? 
+Was ist der Unterschied zwischen Branch und Line Coverage? 
+Welche Art von Problemen zeigt Checkstyle auf? 
+Sollte man davon alle beheben? 
+Was macht Sinn? 
+Betrachten Sie die Meldungen von PMD. Wie unterscheidet sich dieses von Checkstyle? 
+
+</script></section><section data-markdown><script type="text/template">
+## Finishing up
+
+Die Fehler die von PMD gefunden werden können zu Wartungsproblemen führen. Bitte beheben Sie alle Fehler. Commiten und pushen Sie oft, damit Sie schnell Feedback bekommen.
+
+Jetzt sollte das Projekt wieder auf dem richtigen Weg sein, der Projektmanager muss seinen berüchtigten Roundhouse Kick nicht vorführen.
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Ziel
+
+Ziel der Übung ist es vorhandenes Wissen über Versionskontrolle und Buildmanagement auszubauen und mit dem Thema Continuous Integration zu verbinden.
+ 
+Team: XYZ 
+ 
+</script></section><section data-markdown><script type="text/template">
+## Glückwunsch
+
+Ihr dürft jetzt ein Legacy Projekt warten. Zum Glück habt ihr einen Continuous Integration Server, der euch die Arbeit erleichtert. 
+
+</script></section><section data-markdown><script type="text/template">
+## Los geht's
+
+Der Code für euer Projekt liegt auf dem FH internen GitLab, pullen sie diesen über das Terminal von `git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git`
+
+</script></section><section data-markdown><script type="text/template">
+## Maven
+
+Im Projekt befindet sich eine `pom.xml` (es handelt sich also um ein Maven Projekt). Führt die Tests über das Terminal aus (Maven wird auf dem Terminal als `mvn` abgekürtzt). (*)
+
+</script></section><section data-markdown><script type="text/template">
+## Work smart, work less
+
+Also wir haben Tests, das ist schonmal gut, aber nicht jeder Entwickler denkt immer daran die Tests auszuführen. Deshalb nutzen wir besser **zusätzlich** unseren Continuous Integration Server. Dieser führt Tests automatisch aus und benachrichtigt die Entwickler. Jenkins ist einfach zu installieren.
+
+	- wechselt im Terminal auf den Desktop
+	- öffnet Jenkins wie jede andere Java Anwendung `java -jar jenkins.war`
+	- für euer Projekt existiert bereits eine einfache Konfiguration
+	- navigiert im Browser auf `http://localhost:8080` (Jenkins startet einen eigenen Webserver)
+	- startet einen Build
+
+</script></section><section data-markdown><script type="text/template">
+## Reicht das?
+
+Wenn wir mal ehrlich sind, dann haben wir immer noch nicht viel erreicht. Entwickler müssen immer noch "von Hand" überprüfen ob alles in Ordnung ist.
+
+Was wir eigentlich wollen ist, dass ein Commit automatisch die Überprüfung startet. Man kann dies durch sog. Polling (alle x Intervalle auf Änderungen prüfen) realisieren, aber effizienter ist, wenn der CI Server nur arbeitet, wenn es wirklich Änderungen gibt.
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks
+
+Hier kommen Git Hooks ins Spiel. Aber wie es im Leben so ist gibt es natürlich wieder verschiedene Möglichkeiten dies umzusetzen.
+
+ - Server-seitig: z.B. pre-receive, post-receive, update
+ - Client-seitig: z.B. pre-commit, post-commit, pre-checkout, **post-push**, ...
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks #2
+
+Wir werden hier die lokale Lösung verwenden, da Sie keinen Zugriff auf den Server haben. Idealerweise ist ein post-receive hook für den Server, da die Client-seitige Lösung von jedem Entwickler umgesetzt werden muss.
+
+Git Hooks sind sprachunabhängige Skripte die nur ausführbar sein müssen.
+
+Wir verwenden folgende Bash Lösung:
+
+```bash
+#!/bin/sh
+curl "http://localhost:8080/git/notifyCommit?url=git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git"
+``` 
+
+</script></section><section data-markdown><script type="text/template">
+## Git Hooks #3
+
+@TODO
+
+```bash
+#!/bin/sh
+curl "http://localhost:8080/git/notifyCommit?url=git@inf-gitlab-ci.inf.fh-rosenheim.de:sINFmihaeu/ci-team-XYZ.git"
+```
+
+</script></section><section data-markdown><script type="text/template">
+## Making it work
+
+Erstellen Sie den Hook im Projektverzeichnis unter dem Pfad 
+```
+.git/hooks/pre-push
+``` 
+(pre-push ist der Dateiname).
+
+In diesem Ordner sehen übrigens auch noch Beispiele für andere typische Git Hooks.
+
+</script></section><section data-markdown><script type="text/template">
+## Let's try it
+
+Nehmen Sie jetzt eine kleine Änderung vor (z.B. an der README.md) und commiten und pushen Sie diese.
+
+Sie sollten beim Push eine Bestätigungsnachricht vom Server bekommen (Scheduled polling of XZY).
+
+</script></section><section data-markdown><script type="text/template">
+## Spread the word
+
+Damit jeder über den Stand der Software informiert wird bietet benachrichtigt Jenkins die Teammitglieder. Teams benutzen dafür alles mögliche von E-Mail, Twitter, Skype, IRC, Slack, Hipchat bis hin zu Lavalampen.
+
+Für diese Übung haben wir Jenkins mit Slack integriert. Alle Teams der Übung haben verschiedene Instanzen von Jenkins, die jedoch auf den gleichen Slack Channel benachrichtigen.
+
+Ein Blick auf den Beamer sollte 3-5 Sekunden (Jenkins Ruhephase) nach eurem Push zeigen, dass der Build anläuft.
+
+</script></section><section data-markdown><script type="text/template">
+## Zwischenergebnis
+
+Unser Stand ist jetzt, dass wir während der Arbeit über den Stand des Projekts hinsichtlich der Tests benachrichtigt werden. Wenn ein Entwickler einen Build zerstört, bekommt das dann auch jeder mit (und ein zerstörter Build kann viel Zeit und Geld kosten).
+
+Damit so etwas nicht passiert schreibt man besser viele Tests und stellt sicher, dass alles läuft. Noch besser wäre natürlich ein pre-commit Hook der das überprüft, dann vergißt man es nicht.
+
+Nichtsdestotrotz haben wir jetzt ein Sicherheitsnetz (oder zumindest jemanden der schreit, falls man sich das Genick bricht).
+
+</script></section><section data-markdown><script type="text/template">
+## What can Jenkins do?
+
+Tests sind natürlich nicht unser einziges Maß der Projektqualität.
+
+Jenkins ist erweiterbar und es gibt hunderte Plugins die einfach im GUI zu installieren sind.
+
+Bevor wir uns Analysetools ansehen, installieren wir zwei Plugins um produktiver arbeiten zu können.
+
+</script></section><section data-markdown><script type="text/template">
+## Jenkins Plugins
+
+Rufen Sie wieder Jenkins auf und installieren sie folgende Plugins:
+
+#</script></section><section data-markdown><script type="text/template">
+## Green Balls
+
+Blaue Benachrichtigungen sind ein UX Disaster.
+
+#</script></section><section data-markdown><script type="text/template">
+## Chuck Norris
+
+> The Chuck Norris plugin for Hudson is _very_ motivating.
+
+> Uncle Bob Martin
+
+https://twitter.com/unclebobmartin/statuses/10741488856
+
+</script></section><section data-markdown><script type="text/template">
+## Review
+
+Mit der Unterstützung von Chuck Norris kann man wieder ordentlich arbeiten. 
+
+Wir haben bereits einige weitere Plugins vorbereitet. Diese sollen uns helfen konkretere Aussagen über die Projektqualität machen zu können.
+
+Versuchen Sie die folgenden Fragen mit Hilfe der Ergebnisse von Jenkins zu beantworten:
+
+Wie viel Code Coverage wird durch die Tests erziehlt? 
+Was ist der Unterschied zwischen Branch und Line Coverage? 
+Welche Art von Problemen zeigt Checkstyle auf? 
+Sollte man davon alle beheben? 
+Was macht Sinn? 
+Betrachten Sie die Meldungen von PMD. Wie unterscheidet sich dieses von Checkstyle? 
+
+</script></section><section data-markdown><script type="text/template">
+## Finishing up
+
+Die Fehler die von PMD gefunden werden können zu Wartungsproblemen führen. Bitte beheben Sie alle Fehler. Commiten und pushen Sie oft, damit Sie schnell Feedback bekommen.
+
+Jetzt sollte das Projekt wieder auf dem richtigen Weg sein, der Projektmanager muss seinen berüchtigten Roundhouse Kick nicht vorführen.
+</script></section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
